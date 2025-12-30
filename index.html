@@ -1,0 +1,146 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Crew Platform</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div class="app">
+        <!-- LEFT PANE -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brandMark"></div>
+                <div class="brandText">
+                    <div class="brandTitle">SMALL OCEANIS</div>
+                    <div class="brandSub">CROSSWORLD</div>
+                </div>
+            </div>
+
+            <div class="sidebarSection">
+                <div class="sidebarHeader">Crew Types</div>
+                <nav id="typeList" class="typeList"></nav>
+            </div>
+
+            <div class="sidebarFooter">
+                <div class="hint">Tip: Select a type → choose a crew → full profile opens.</div>
+            </div>
+        </aside>
+
+        <!-- RIGHT PANE -->
+        <main class="main">
+            <!-- Top bar -->
+            <header class="topbar">
+                <div class="topbarLeft">
+                    <div id="viewTitle" class="viewTitle">All Crew</div>
+                    <div id="viewSubtitle" class="viewSubtitle">Select a type from the left</div>
+                </div>
+
+                <div class="topbarRight">
+                    <div class="searchWrap">
+                        <input id="searchInput" class="search" placeholder="Search crew…" />
+                        <span class="searchIcon">⌕</span>
+                    </div>
+
+                    <button id="addCrewBtn" class="btn small">+ Add Crew</button>
+
+
+
+                </div>
+            </header>
+
+            <!-- Content area -->
+            <section class="content" id="contentArea">
+                <!-- LIST VIEW -->
+                <div id="listView" class="listView">
+                    <div id="crewGrid" class="crewGrid"></div>
+                </div>
+
+                <!-- PROFILE VIEW (full right pane) -->
+                <div id="profileView" class="profileView hidden">
+                    <div class="profileHeader">
+                        <button id="backBtn" class="btn ghost">← Back</button>
+                        <div class="profileHeaderMeta">
+                            <div id="profileName" class="profileName">Crew Name</div>
+                            <div id="profileRole" class="profileRole">Role • Rank</div>
+                        </div>
+                    </div>
+
+                    <div class="profileBody">
+                        <!-- Left card -->
+                        <div class="panel photoPanel">
+                            <div class="panelTitle">Identity</div>
+
+                            <div class="photoRow">
+                                <div class="avatarWrap">
+                                    <img id="profilePhoto" class="avatar" alt="Crew photo" />
+                                    <div class="avatarGlow"></div>
+                                </div>
+
+                                <div class="photoActions">
+                                    <label class="btn small">
+                                        Upload Photo
+                                        <input id="photoInput" type="file" accept="image/*" hidden />
+                                    </label>
+                                    <button id="removePhotoBtn" class="btn small ghost">Remove</button>
+                                    <div class="muted tiny">JPG/PNG/WebP</div>
+                                </div>
+                            </div>
+
+                            <div class="kvGrid" id="profileDetails"></div>
+                        </div>
+
+                        <!-- Right card -->
+                        <div class="panel statusPanel">
+                            <div class="panelTitle">Crew Status</div>
+                            <div class="muted">Select one of the 5 statuses:</div>
+
+                            <div class="statusBar" id="statusBar"></div>
+
+                            <div class="divider"></div>
+
+                            <div class="panelTitle">Attachments</div>
+                            <div class="attachmentsRow">
+                                <label class="btn">
+                                    Add Attachments
+                                    <input id="attachInput" type="file" multiple hidden />
+                                </label>
+                                <div class="muted tiny">Any file type. Stored locally (this browser).</div>
+                            </div>
+
+                            <div id="attachmentsList" class="attachmentsList"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Crew data files FIRST -->
+    <script src="js/eto.js"></script>
+    <script src="js/fitters.js"></script>
+
+    <!-- App logic LAST -->
+    <script src="js/app.js"></script>
+
+    <div id="crewEditor" class="modal hidden">
+        <div class="modalCard">
+            <div class="modalHeader">
+                <div id="editorTitle" class="modalTitle">Add Crew</div>
+                <button id="closeEditorBtn" class="btn ghost small">✕</button>
+            </div>
+
+            <div class="modalBody" id="editorForm"></div>
+
+            <div class="modalFooter">
+                <button id="saveCrewBtn" class="btn">Save</button>
+                <button id="cancelCrewBtn" class="btn ghost">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+
+</html>
