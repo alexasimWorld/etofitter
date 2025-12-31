@@ -101,14 +101,11 @@ function wireEvents() {
 
 // ----- State -----
 function loadState() {
+    let stored = { crew: [] };
+
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-            const parsed = JSON.parse(raw);
-            // ensure schema
-            parsed.crew = (parsed.crew || []).map(ensureCrewSchema);
-            return parsed;
-        }
+        if (raw) stored = JSON.parse(raw);
     } catch { }
 
     const seed = [
@@ -119,8 +116,22 @@ function loadState() {
         Handler: c.Handler ?? c.handler ?? ""
     }));
 
-    return { crew: seed.map(ensureCrewSchema) };
+    const byId = new Map();
+
+    // Stored crew first
+    (stored.crew || []).forEach(c => byId.set(c.id, c));
+
+    // Add missing seed crew
+    seed.forEach(c => {
+        if (!byId.has(c.id)) byId.set(c.id, c);
+    });
+
+    return {
+        crew: [...byId.values()].map(ensureCrewSchema)
+    };
 }
+
+
 
 function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
