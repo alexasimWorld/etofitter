@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -44,9 +44,8 @@
                     </div>
 
                     <button id="addCrewBtn" class="btn small">+ Add Crew</button>
-
-
-
+                    <button id="editCrewBtn" class="btn small hidden">Edit</button>
+                    <button id="deleteCrewBtn" class="btn small ghost hidden">Delete</button>
                 </div>
             </header>
 
@@ -57,7 +56,7 @@
                     <div id="crewGrid" class="crewGrid"></div>
                 </div>
 
-                <!-- PROFILE VIEW (full right pane) -->
+                <!-- PROFILE VIEW -->
                 <div id="profileView" class="profileView hidden">
                     <div class="profileHeader">
                         <button id="backBtn" class="btn ghost">← Back</button>
@@ -91,25 +90,10 @@
                             <div class="kvGrid" id="profileDetails"></div>
                         </div>
 
-                        <!-- Right card -->
-                        <div class="panel statusPanel">
-                            <div class="panelTitle">Crew Status</div>
-                            <div class="muted">Select one of the 5 statuses:</div>
-
-                            <div class="statusBar" id="statusBar"></div>
-
-                            <div class="divider"></div>
-
-                            <div class="panelTitle">Attachments</div>
-                            <div class="attachmentsRow">
-                                <label class="btn">
-                                    Add Attachments
-                                    <input id="attachInput" type="file" multiple hidden />
-                                </label>
-                                <div class="muted tiny">Any file type. Stored locally (this browser).</div>
-                            </div>
-
-                            <div id="attachmentsList" class="attachmentsList"></div>
+                        <!-- Right: TABS -->
+                        <div class="panel tabPanel">
+                            <div class="tabsBar" id="tabsBar"></div>
+                            <div class="tabBody" id="tabBody"></div>
                         </div>
                     </div>
                 </div>
@@ -124,6 +108,7 @@
     <!-- App logic LAST -->
     <script src="js/app.js"></script>
 
+    <!-- Modal: Add/Edit Crew -->
     <div id="crewEditor" class="modal hidden">
         <div class="modalCard">
             <div class="modalHeader">
@@ -141,7 +126,4 @@
     </div>
 
 </body>
-
-
 </html>
-
