@@ -63,7 +63,6 @@ body {
     border-radius: 14px;
     background: radial-gradient(12px 12px at 30% 30%, rgba(255,255,255,.85), transparent 70%), radial-gradient(26px 26px at 60% 60%, rgba(120,180,255,.40), transparent 70%), linear-gradient(135deg, rgba(140,110,255,.55), rgba(120,180,255,.25));
     border: 1px solid rgba(255,255,255,.14);
-    position: relative;
 }
 
 .brandTitle {
@@ -94,7 +93,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 6px
+    padding: 6px;
 }
 
 .typeBtn {
@@ -186,6 +185,12 @@ body {
     margin-top: 2px
 }
 
+.topbarRight {
+    display: flex;
+    gap: 10px;
+    align-items: center
+}
+
 .searchWrap {
     position: relative;
     width: 320px;
@@ -219,7 +224,7 @@ body {
 .content {
     height: 100%;
     overflow: auto;
-    padding: 18px;
+    padding: 18px
 }
 
 /* Crew list cards */
@@ -326,14 +331,14 @@ body {
 .profileView {
     width: 100%;
     min-height: calc(100vh - 68px);
-    border-radius: var(--radius2);
+    border-radius: var(--radius2)
 }
 
 .profileHeader {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 10px 16px 10px;
+    padding: 10px 10px 16px 10px
 }
 
 .profileName {
@@ -425,7 +430,7 @@ body {
     color: var(--muted);
     font-size: 11px;
     letter-spacing: .08em;
-    text-transform: uppercase
+    text-transform: uppercase;
 }
 
 .v {
@@ -433,100 +438,7 @@ body {
     font-weight: 700
 }
 
-/* Status bar */
-.statusBar {
-    margin-top: 12px;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
-}
-
-.statusBtn {
-    padding: 12px 10px;
-    border-radius: 16px;
-    border: 1px solid var(--border);
-    background: rgba(0,0,0,.18);
-    color: rgba(255,255,255,.86);
-    cursor: pointer;
-    font-weight: 800;
-    transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
-}
-
-    .statusBtn:hover {
-        transform: translateY(-1px)
-    }
-
-    .statusBtn.active {
-        border-color: rgba(255,255,255,.18);
-        box-shadow: 0 0 0 4px rgba(255,255,255,.06);
-    }
-
-/* Attachments */
-.divider {
-    height: 1px;
-    background: rgba(255,255,255,.10);
-    margin: 14px 0;
-}
-
-.attachmentsRow {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    flex-wrap: wrap
-}
-
-.attachmentsList {
-    margin-top: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px
-}
-
-.fileItem {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 10px;
-    border-radius: 16px;
-    border: 1px solid var(--border);
-    background: rgba(0,0,0,.18);
-}
-
-.fileLeft {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    min-width: 0
-}
-
-.fileIcon {
-    width: 34px;
-    height: 34px;
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,.14);
-    background: radial-gradient(20px 20px at 40% 40%, rgba(255,255,255,.25), rgba(120,180,255,.12));
-    flex: 0 0 auto;
-}
-
-.fileMeta {
-    min-width: 0
-}
-
-.fileName {
-    font-weight: 800;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 48ch
-}
-
-.fileSub {
-    color: var(--muted);
-    font-size: 12px;
-    margin-top: 2px
-}
-
+/* Buttons */
 .btn {
     border: 1px solid rgba(255,255,255,.14);
     background: linear-gradient(135deg, rgba(120,180,255,.18), rgba(140,110,255,.12));
@@ -551,10 +463,9 @@ body {
 
     .btn.ghost {
         background: rgba(0,0,0,.18);
-        color: rgba(255,255,255,.86);
+        color: rgba(255,255,255,.86)
     }
 
-/* Utility */
 .muted {
     color: var(--muted)
 }
@@ -562,6 +473,142 @@ body {
 .tiny {
     font-size: 12px
 }
+
+/* Tabs */
+.tabPanel {
+    padding: 0;
+    overflow: hidden
+}
+
+.tabsBar {
+    display: flex;
+    gap: 10px;
+    padding: 12px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    overflow: auto;
+}
+
+.tabBtn {
+    white-space: nowrap;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(0,0,0,.18);
+    color: rgba(255,255,255,.86);
+    border-radius: 999px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-weight: 900;
+    letter-spacing: .02em;
+}
+
+    .tabBtn.active {
+        background: linear-gradient(135deg, rgba(120,180,255,.18), rgba(140,110,255,.12));
+        border-color: rgba(160,220,255,.28);
+    }
+
+.tabBody {
+    padding: 14px;
+    overflow: auto;
+    max-height: calc(100vh - 68px - 22px - 70px)
+}
+
+/* Forms inside tabs */
+.formGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+    .field label {
+        font-size: 11px;
+        color: rgba(255,255,255,.6);
+        text-transform: uppercase;
+        letter-spacing: .08em;
+    }
+
+    .field input, .field select, .field textarea {
+        padding: 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,.14);
+        background: rgba(0,0,0,.25);
+        color: white;
+        outline: none;
+    }
+
+    .field textarea {
+        min-height: 92px;
+        resize: vertical;
+    }
+
+    .field .help {
+        color: var(--muted2);
+        font-size: 12px
+    }
+
+/* Table/list rows */
+.table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+}
+
+.tr {
+    background: rgba(0,0,0,.18);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 16px;
+}
+
+.tableRow {
+    display: grid;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(0,0,0,.18);
+    margin-bottom: 10px;
+}
+
+.rowActions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap
+}
+
+/* Status buttons in Status tab */
+.statusGrid {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(120px,1fr));
+    gap: 10px;
+}
+
+.statusBtn {
+    padding: 12px 10px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,.18);
+    color: rgba(255,255,255,.86);
+    cursor: pointer;
+    font-weight: 900;
+    transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+
+    .statusBtn:hover {
+        transform: translateY(-1px)
+    }
+
+    .statusBtn.active {
+        border-color: rgba(255,255,255,.18);
+        box-shadow: 0 0 0 4px rgba(255,255,255,.06);
+    }
 
 /* Responsive */
 @media (max-width: 1050px) {
@@ -575,6 +622,10 @@ body {
 
     .profileBody {
         grid-template-columns: 1fr
+    }
+
+    .tabBody {
+        max-height: none
     }
 }
 
@@ -605,8 +656,13 @@ body {
     .crewGrid {
         grid-template-columns: 1fr
     }
+
+    .statusGrid {
+        grid-template-columns: 1fr 1fr
+    }
 }
 
+/* Modal */
 .modal {
     position: fixed;
     inset: 0;
@@ -630,12 +686,12 @@ body {
 .modalHeader {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: center
 }
 
 .modalTitle {
     font-weight: 900;
-    letter-spacing: .06em;
+    letter-spacing: .06em
 }
 
 .modalBody {
@@ -651,24 +707,3 @@ body {
     justify-content: flex-end;
     gap: 10px;
 }
-
-.field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-    .field label {
-        font-size: 11px;
-        color: rgba(255,255,255,.6);
-        text-transform: uppercase;
-    }
-
-    .field input, .field select {
-        padding: 10px;
-        border-radius: 14px;
-        border: 1px solid rgba(255,255,255,.14);
-        background: rgba(0,0,0,.25);
-        color: white;
-    }
-
