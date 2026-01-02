@@ -1,4 +1,4 @@
-// Crew Platform - app.js
+﻿// Crew Platform - app.js
 
 const STORAGE_KEY = "crew_platform_v1";
 
@@ -24,8 +24,14 @@ let state = loadState();
 let selectedType = null;
 let selectedCrewId = null;
 let activeTabKey = "personal";
+let activeCourseTarget = null;
+let activeCrewId = null;
+let activeTrainingId = null;
+
 
 // ----- DOM -----
+
+
 const typeListEl = document.getElementById("typeList");
 const crewGridEl = document.getElementById("crewGrid");
 const searchInputEl = document.getElementById("searchInput");
@@ -39,11 +45,6 @@ const profileViewEl = document.getElementById("profileView");
 const backBtn = document.getElementById("backBtn");
 const profileNameEl = document.getElementById("profileName");
 const profileRoleEl = document.getElementById("profileRole");
-const profilePhotoEl = document.getElementById("profilePhoto");
-const profileDetailsEl = document.getElementById("profileDetails");
-
-const photoInputEl = document.getElementById("photoInput");
-const removePhotoBtn = document.getElementById("removePhotoBtn");
 
 const tabsBarEl = document.getElementById("tabsBar");
 const tabBodyEl = document.getElementById("tabBody");
@@ -60,44 +61,109 @@ const closeEditorBtn = document.getElementById("closeEditorBtn");
 const cancelCrewBtn = document.getElementById("cancelCrewBtn");
 const saveCrewBtn = document.getElementById("saveCrewBtn");
 
+const coursePopup = document.getElementById("coursePopup");
+const courseGrid = document.getElementById("courseGrid");
+const closeCoursePopupBtn = document.getElementById("closeCoursePopup");
+
+
 let editingCrewId = null;
 
-// ----- Init -----
-renderTypeList();
-wireEvents();
-renderList();
-showListView();
+document.addEventListener("DOMContentLoaded", () => {
+    renderTypeList();
+    wireEvents();
+    renderList();
+    showListView();
+});
+
+closeCoursePopupBtn?.addEventListener("click", () => {
+    coursePopup.classList.add("hidden");
+});
+
+
 
 function wireEvents() {
-    searchInputEl.addEventListener("input", () => renderList());
+    // ---------------------------
+    // Search & navigation
+    // ---------------------------
+    searchInputEl?.addEventListener("input", () => renderList());
 
-    backBtn.addEventListener("click", () => {
+    backBtn?.addEventListener("click", () => {
         selectedCrewId = null;
         showListView();
     });
 
-    photoInputEl.addEventListener("change", async (e) => {
-        const file = e.target.files?.[0];
-        if (!file || !selectedCrewId) return;
+    addCrewBtn && (addCrewBtn.onclick = () => openEditor());
+    editCrewBtn && (editCrewBtn.onclick = () => openEditor(selectedCrewId));
+    deleteCrewBtn && (deleteCrewBtn.onclick = deleteCrew);
 
-        const dataUrl = await fileToDataUrl(file);
-        updateCrew(selectedCrewId, c => ({ ...c, photoDataUrl: dataUrl }));
-        renderProfile(selectedCrewId);
-        e.target.value = "";
+    closeEditorBtn && (closeEditorBtn.onclick = closeEditor);
+    cancelCrewBtn && (cancelCrewBtn.onclick = closeEditor);
+
+    // ---------------------------
+    // Export / Import JSON
+    // ---------------------------
+    const exportBtn = document.getElementById("exportJsonBtn");
+    const importBtn = document.getElementById("importJsonBtn");
+    const jsonFileInput = document.getElementById("jsonFileInput");
+
+    // Export
+    exportBtn && exportBtn.addEventListener("click", saveToJsonFile);
+
+    // Import (OPEN FILE DIALOG ONCE)
+    importBtn && importBtn.addEventListener("click", () => {
+        jsonFileInput.value = "";   // allow re-import of same file
+        jsonFileInput.click();
     });
 
-    removePhotoBtn.addEventListener("click", () => {
-        if (!selectedCrewId) return;
-        updateCrew(selectedCrewId, c => ({ ...c, photoDataUrl: "" }));
-        renderProfile(selectedCrewId);
+    // Handle selected file
+    jsonFileInput && jsonFileInput.addEventListener("change", () => {
+        const file = jsonFileInput.files?.[0];
+        jsonFileInput.value = "";   // critical reset
+        if (file) loadFromJsonFile(file);
     });
 
-    addCrewBtn.onclick = () => openEditor();
-    editCrewBtn.onclick = () => openEditor(selectedCrewId);
-    deleteCrewBtn.onclick = deleteCrew;
+    // ---------------------------
+    // Save crew (Add / Edit)
+    // ---------------------------
+    if (saveCrewBtn) {
+        saveCrewBtn.onclick = () => {
+            const data = {};
+            editorFormEl
+                .querySelectorAll("input,select")
+                .forEach(el => data[el.name] = el.value);
 
-    closeEditorBtn.onclick = cancelCrewBtn.onclick = closeEditor;
+            if (editingCrewId) {
+                updateCrew(editingCrewId, c => ({ ...c, ...data }));
+            } else {
+                state.crew.push(ensureCrewSchema({
+                    id: cryptoId(),
+                    status: "studying",
+                    statusComment: "",
+                    documents: [],
+                    seaExperience: [],
+                    training: [],
+                    future: defaultFuture(),
+                    photoDataUrl: "",
+                    ...data
+                }));
+                saveState();
+            }
+
+            renderTypeList();
+            renderList();
+            closeEditor();
+
+            if (editingCrewId) {
+                selectedCrewId = editingCrewId;
+                renderProfile(selectedCrewId);
+                showProfileView();
+            }
+        };
+    }
 }
+
+
+
 
 // ----- State -----
 function loadState() {
@@ -134,8 +200,14 @@ function loadState() {
 
 
 function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+        console.error(e);
+        alert("Storage limit reached. Please export your JSON and clear old documents or reduce file sizes.");
+    }
 }
+
 
 function ensureCrewSchema(c) {
     const base = {
@@ -322,24 +394,7 @@ function renderProfile(crewId) {
     profileNameEl.textContent = crew.name;
     profileRoleEl.textContent = `${crew.type} • ${crew.rank}`;
 
-    profilePhotoEl.src = crew.photoDataUrl || avatarPlaceholderDataUrl(crew.name);
-
-    profileDetailsEl.innerHTML = "";
-    const details = [
-        ["Type", crew.type],
-        ["Rank", crew.rank],
-        ["Nationality", crew.nationality || crew.personal?.nationality || "-"],
-        ["Handler", crew.Handler || "-"],
-        ["Email", crew.email || crew.personal?.emailPersonal || "-"],
-        ["Phone", crew.phone || crew.personal?.phoneMobile || "-"],
-    ];
-    for (const [k, v] of details) {
-        const el = document.createElement("div");
-        el.className = "kv";
-        el.innerHTML = `<div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div>`;
-        profileDetailsEl.appendChild(el);
-    }
-
+    
     // Tabs
     renderTabs(crewId);
 
@@ -379,6 +434,77 @@ function renderTabs(crewId) {
 function renderTabPersonal(crewId) {
     const c = ensureCrewSchema(state.crew.find(x => x.id === crewId));
     const p = c.personal;
+
+    const identity = document.createElement("div");
+    identity.className = "panel";
+    identity.style.marginBottom = "14px";
+
+    identity.innerHTML = `
+  <div class="panelTitle">Identity</div>
+
+  <div class="photoRow">
+    <div class="avatarWrap">
+      <img id="profilePhoto" class="avatar" alt="Crew photo" />
+      <div class="avatarGlow"></div>
+    </div>
+
+    <div class="photoActions">
+      <label class="btn small">
+        Upload Photo
+        <input id="photoInput" type="file" accept="image/*" hidden />
+      </label>
+      <button id="removePhotoBtn" class="btn small ghost">Remove</button>
+      <div class="muted tiny">JPG/PNG/WebP</div>
+    </div>
+  </div>
+
+  <div class="kvGrid" id="profileDetails"></div>
+`;
+
+    tabBodyEl.appendChild(identity);
+
+    // Populate identity info
+    const crew = ensureCrewSchema(c);
+
+    const profilePhotoEl = identity.querySelector("#profilePhoto");
+    const profileDetailsEl = identity.querySelector("#profileDetails");
+
+    profilePhotoEl.src = crew.photoDataUrl || avatarPlaceholderDataUrl(crew.name);
+
+    const details = [
+        ["Type", crew.type],
+        ["Rank", crew.rank],
+        ["Nationality", crew.nationality || crew.personal?.nationality || "-"],
+        ["Handler", crew.Handler || "-"],
+        ["Email", crew.email || crew.personal?.emailPersonal || "-"],
+        ["Phone", crew.phone || crew.personal?.phoneMobile || "-"],
+    ];
+
+    profileDetailsEl.innerHTML = "";
+    for (const [k, v] of details) {
+        const el = document.createElement("div");
+        el.className = "kv";
+        el.innerHTML = `<div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div>`;
+        profileDetailsEl.appendChild(el);
+    }
+    const photoInputEl = identity.querySelector("#photoInput");
+    const removePhotoBtn = identity.querySelector("#removePhotoBtn");
+
+    photoInputEl.addEventListener("change", async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const dataUrl = await fileToDataUrl(file);
+        updateCrew(crewId, c => ({ ...c, photoDataUrl: dataUrl }));
+        renderTabs(crewId); // refresh tab
+        e.target.value = "";
+    });
+
+    removePhotoBtn.addEventListener("click", () => {
+        updateCrew(crewId, c => ({ ...c, photoDataUrl: "" }));
+        renderTabs(crewId);
+    });
+
 
     const fields = [
         ["First name", "firstName"], ["Last name", "lastName"],
@@ -629,42 +755,72 @@ function renderSeaList(container, crewId) {
     for (const it of items) {
         const row = document.createElement("div");
         row.className = "tableRow";
-        row.style.gridTemplateColumns = "1fr 1fr 1fr 1fr";
+        row.style.gridTemplateColumns = "110px 110px 80px 1.5fr 1.5fr 1.5fr 2fr auto";
+        row.style.alignItems = "center";
+
 
         row.innerHTML = `
-      <div class="field">
-        <label>From</label>
-        <input type="date" data-sea-from="${escapeAttr(it.id)}" value="${escapeAttr(it.from || "")}" />
-      </div>
-      <div class="field">
-        <label>To</label>
-        <input type="date" data-sea-to="${escapeAttr(it.id)}" value="${escapeAttr(it.to || "")}" />
-      </div>
-      <div class="field">
-        <label>Duration (months)</label>
-        <input disabled value="${escapeAttr(String(it.months ?? 0))}" />
-      </div>
-      <div class="rowActions">
-        <button class="btn small ghost" data-sea-del="${escapeAttr(it.id)}">Remove</button>
-      </div>
+<input
+  type="date"
+  data-sea-from="..."
+  title="From"
+/>
 
-      <div class="field">
-        <label>Vessel name</label>
-        <input data-sea-vessel="${escapeAttr(it.id)}" value="${escapeAttr(it.vesselName || "")}" />
-      </div>
-      <div class="field">
-        <label>Manager name</label>
-        <input data-sea-manager="${escapeAttr(it.id)}" value="${escapeAttr(it.managerName || "")}" />
-      </div>
-      <div class="field">
-        <label>Manning office</label>
-        <input data-sea-manning="${escapeAttr(it.id)}" value="${escapeAttr(it.manningOffice || "")}" />
-      </div>
-      <div class="field">
-        <label>Comments</label>
-        <input data-sea-comments="${escapeAttr(it.id)}" value="${escapeAttr(it.comments || "")}" />
-      </div>
+
+<input
+  type="date"
+  data-sea-to="..."
+  title="To"
+/>
+
+
+<input
+  type="text"
+  disabled
+  data-sea-months
+  value="${(Number(it.months) || 0).toFixed(2)}"
+  title="Months"
+/>
+
+
+
+<div class="rowActions">
+  <button class="btn small ghost" data-sea-del>Remove</button>
+</div>
+
+
+
+<input
+  data-sea-vessel="..."
+  placeholder="Vessel"
+  title="Vessel name"
+/>
+
+
+<input
+  data-sea-manager="..."
+  placeholder="Manager"
+  title="Manager name"
+/>
+
+
+<input
+  data-sea-manning="..."
+  placeholder="Manning"
+  title="Manning office"
+/>
+
+
+<input
+  data-sea-comments="..."
+  placeholder="Comments"
+  title="Comments"
+/>
+
     `;
+
+        const fromEl = row.querySelector("[data-sea-from]");
+        const toEl = row.querySelector("[data-sea-to]");
 
         const write = (patch) => {
             updateCrew(crewId, cc => ({
@@ -673,17 +829,29 @@ function renderSeaList(container, crewId) {
             }));
         };
 
-        const fromEl = row.querySelector("[data-sea-from]");
-        const toEl = row.querySelector("[data-sea-to]");
+        fromEl.value = it.from || "";
+        toEl.value = it.to || "";
+        row.querySelector("[data-sea-months]").value = (Number(it.months) || 0).toFixed(2);
+
+
+        row.querySelector("[data-sea-vessel]").value = it.vesselName || "";
+        row.querySelector("[data-sea-manager]").value = it.managerName || "";
+        row.querySelector("[data-sea-manning]").value = it.manningOffice || "";
+        row.querySelector("[data-sea-comments]").value = it.comments || "";
+
 
         function updateMonths() {
             const from = fromEl.value;
             const to = toEl.value;
             const months = calcMonths(from, to);
             write({ from, to, months });
-            // refresh only this tab
-            renderTabs(crewId);
+
+            // update months field ONLY
+            const monthsInput = row.querySelector("[data-sea-months]");
+            if (monthsInput) monthsInput.value = (Number(months) || 0).toFixed(2);
+
         }
+
 
         fromEl.addEventListener("change", updateMonths);
         toEl.addEventListener("change", updateMonths);
@@ -693,7 +861,8 @@ function renderSeaList(container, crewId) {
         row.querySelector("[data-sea-manning]")?.addEventListener("input", e => write({ manningOffice: e.currentTarget.value }));
         row.querySelector("[data-sea-comments]")?.addEventListener("input", e => write({ comments: e.currentTarget.value }));
 
-        row.querySelector("[data-sea-del]")?.addEventListener("click", () => {
+        row.querySelector("[data-sea-del]").addEventListener("click", () => {
+
             if (!confirm("Remove this sea experience line?")) return;
             updateCrew(crewId, cc => ({ ...cc, seaExperience: (cc.seaExperience || []).filter(x => x.id !== it.id) }));
             renderTabs(crewId);
@@ -713,7 +882,7 @@ function renderTabTraining(crewId) {
     wrap.innerHTML = `
     <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center">
       <div>
-        <div style="font-weight:900">Training Progress</div>
+        <div style="font-weight:900">Training Progress (Required as per rank specific)</div>
         <div class="muted tiny">Track enrolled, ongoing and completed courses.</div>
       </div>
       <button id="trAdd" class="btn">+ Add course</button>
@@ -729,8 +898,8 @@ function renderTabTraining(crewId) {
     wrap.querySelector("#trAdd").addEventListener("click", () => {
         const line = {
             id: cryptoId(),
-            courseName: "",
-            status: "Enrolled", // Enrolled / Ongoing / Completed
+            courseId: "",
+            status: "Enrolled",
             dateStarted: "",
             dateCompleted: "",
             responsible: "",
@@ -753,35 +922,51 @@ function renderTrainingList(container, crewId) {
     for (const it of items) {
         const row = document.createElement("div");
         row.className = "tableRow";
-        row.style.gridTemplateColumns = "2fr 1fr 1fr 1fr";
+        row.style.gridTemplateColumns =
+            "2.5fr 1fr 110px 110px 1.5fr auto";
+        row.style.alignItems = "center";
+
 
         row.innerHTML = `
-      <div class="field">
-        <label>Course</label>
-        <input data-tr-course="${escapeAttr(it.id)}" value="${escapeAttr(it.courseName || "")}" />
-      </div>
+<div class="courseSelect" data-course-select>
+  <div class="courseLabel">Course</div>
+  <div class="courseValue">
+    <span data-course-text>— Select training course (Only shows available courses per rank)—</span>
+    <span class="courseArrow">▸</span>
+  </div>
+</div>
 
-      <div class="field">
-        <label>Status</label>
-        <select data-tr-status="${escapeAttr(it.id)}">
-          ${["Enrolled", "Ongoing", "Completed"].map(s => `<option ${s === it.status ? "selected" : ""}>${s}</option>`).join("")}
-        </select>
-      </div>
 
-      <div class="field">
-        <label>Date started</label>
-        <input type="date" data-tr-start="${escapeAttr(it.id)}" value="${escapeAttr(it.dateStarted || "")}" />
-      </div>
 
-      <div class="field">
-        <label>Date completed</label>
-        <input type="date" data-tr-end="${escapeAttr(it.id)}" value="${escapeAttr(it.dateCompleted || "")}" />
-      </div>
 
-      <div class="field">
-        <label>Responsible person</label>
-        <input data-tr-resp="${escapeAttr(it.id)}" value="${escapeAttr(it.responsible || "")}" />
-      </div>
+<select data-tr-status title="Status">
+  <option value="Enrolled">Enrolled</option>
+  <option value="Ongoing">Ongoing</option>
+  <option value="Completed">Completed</option>
+</select>
+
+
+
+<input
+  type="date"
+  data-tr-start="..."
+  title="Start date"
+/>
+
+
+<input
+  type="date"
+  data-tr-end="..."
+  title="End date"
+/>
+
+
+<input
+  data-tr-resp="..."
+  placeholder="Responsible"
+  title="Responsible person"
+/>
+
 
       <div class="rowActions">
         <button class="btn small ghost" data-tr-del="${escapeAttr(it.id)}">Remove</button>
@@ -795,7 +980,30 @@ function renderTrainingList(container, crewId) {
             }));
         };
 
-        row.querySelector("[data-tr-course]")?.addEventListener("input", e => write({ courseName: e.currentTarget.value }));
+        // restore saved values
+        row.querySelector("[data-tr-status]").value = it.status || "Enrolled";
+        row.querySelector("[data-tr-start]").value = it.dateStarted || "";
+        row.querySelector("[data-tr-end]").value = it.dateCompleted || "";
+        row.querySelector("[data-tr-resp]").value = it.responsible || "";
+
+
+
+        const courseSelectEl = row.querySelector("[data-course-select]");
+        const courseTextEl = row.querySelector("[data-course-text]");
+
+        // initial value
+        if (it.courseId) {
+            const found = window.TRAINING_COURSES.find(c => c.id === it.courseId);
+            if (found) courseTextEl.textContent = found.label;
+        }
+
+
+        courseSelectEl.addEventListener("click", () => {
+            openCoursePopup(courseSelectEl, c.type, crewId, it.id);
+        });
+
+
+
         row.querySelector("[data-tr-status]")?.addEventListener("change", e => write({ status: e.currentTarget.value }));
         row.querySelector("[data-tr-start]")?.addEventListener("change", e => write({ dateStarted: e.currentTarget.value }));
         row.querySelector("[data-tr-end]")?.addEventListener("change", e => write({ dateCompleted: e.currentTarget.value }));
@@ -996,37 +1204,6 @@ function input(label, name, value = "", type = "text", options = []) {
     </div>`;
 }
 
-saveCrewBtn.onclick = () => {
-    const data = {};
-    editorFormEl.querySelectorAll("input,select").forEach(el => data[el.name] = el.value);
-
-    if (editingCrewId) {
-        updateCrew(editingCrewId, c => ({ ...c, ...data }));
-    } else {
-        state.crew.push(ensureCrewSchema({
-            id: cryptoId(),
-            status: "studying",
-            statusComment: "",
-            documents: [],
-            seaExperience: [],
-            training: [],
-            future: defaultFuture(),
-            photoDataUrl: "",
-            ...data
-        }));
-        saveState();
-    }
-
-    renderTypeList();
-    renderList();
-    closeEditor();
-
-    if (editingCrewId) {
-        selectedCrewId = editingCrewId;
-        renderProfile(selectedCrewId);
-        showProfileView();
-    }
-};
 
 function deleteCrew() {
     if (!selectedCrewId) return;
@@ -1084,27 +1261,58 @@ function fileToDataUrl(file) {
 
 function openDataUrl(dataUrl) {
     try {
-        const w = window.open();
-        if (!w) return alert("Popup blocked. Please allow popups to view documents.");
-        w.location.href = dataUrl;
-    } catch {
-        alert("Could not open the file.");
+        // Try new tab first
+        const win = window.open("", "_blank");
+        if (!win) {
+            // Fallback: same tab
+            window.location.href = dataUrl;
+            return;
+        }
+
+        // Write minimal HTML wrapper
+        win.document.open();
+        win.document.write(`
+            <!doctype html>
+            <html>
+            <head>
+              <title>Document Viewer</title>
+              <meta charset="utf-8"/>
+              <style>
+                html,body{margin:0;height:100%;background:#000}
+                iframe,img,embed{
+                  width:100%;
+                  height:100%;
+                  border:none;
+                  object-fit:contain;
+                }
+              </style>
+            </head>
+            <body>
+              <embed src="${dataUrl}" />
+            </body>
+            </html>
+        `);
+        win.document.close();
+    } catch (e) {
+        alert("Unable to open file. Please allow popups.");
     }
 }
+
 
 // months difference between two YYYY-MM-DD strings (inclusive-ish, simple and stable)
 function calcMonths(fromStr, toStr) {
     if (!fromStr || !toStr) return 0;
-    const a = new Date(fromStr);
-    const b = new Date(toStr);
-    if (isNaN(a.getTime()) || isNaN(b.getTime())) return 0;
-    if (b < a) return 0;
 
-    const months = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
-    // if b day is >= a day, count as completed month boundary, else keep months as-is
-    const adjust = (b.getDate() >= a.getDate()) ? 0 : -1;
-    return Math.max(0, months + adjust + 1); // "+1" makes same-month contracts show as 1 month
+    const from = new Date(fromStr);
+    const to = new Date(toStr);
+    if (isNaN(from) || isNaN(to) || to < from) return 0;
+
+    const days = (to - from) / (1000 * 60 * 60 * 24) + 1;
+    const months = days / 30.4375; // average month length
+    return Math.round(months * 100) / 100; // 2 decimals
+
 }
+
 
 function debounce(fn, ms) {
     let t = null;
@@ -1131,4 +1339,227 @@ function avatarPlaceholderDataUrl(name) {
     font-family="Arial" font-size="86" font-weight="900" fill="rgba(255,255,255,0.88)">${text}</text>
 </svg>`;
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+
+
+function saveToJsonFile() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `crew_platform_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+
+
+function loadFromJsonFile(file) {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+        try {
+            const data = JSON.parse(reader.result);
+
+            if (!data || !Array.isArray(data.crew)) {
+                alert("Invalid crew JSON file.");
+                return;
+            }
+
+            state = {
+                crew: data.crew.map(ensureCrewSchema)
+            };
+
+            saveState();
+
+            selectedType = null;
+            selectedCrewId = null;
+            activeTabKey = "personal";
+
+            renderTypeList();
+            renderList();
+            showListView();
+
+            viewSubtitleEl.textContent = "Crew data loaded successfully";
+        } catch (err) {
+            console.error(err);
+            alert("Failed to load JSON file.");
+        }
+    };
+
+    reader.readAsText(file);
+}
+
+
+
+const jsonFileInput = document.createElement("input");
+jsonFileInput.type = "file";
+jsonFileInput.accept = ".json";
+jsonFileInput.hidden = true;
+
+jsonFileInput.addEventListener("change", e => {
+    const file = e.target.files?.[0];
+    if (file) loadFromJsonFile(file);
+    jsonFileInput.value = "";
+});
+
+document.body.appendChild(jsonFileInput);
+
+
+
+function openCoursePopup(anchorEl, crewType, crewId, trainingId) {
+    if (!anchorEl) return;
+
+    activeCourseTarget = anchorEl;
+    activeCrewId = crewId;
+    activeTrainingId = trainingId;
+
+    if (!Array.isArray(window.TRAINING_COURSES)) {
+        console.warn("TRAINING_COURSES not loaded");
+        return;
+    }
+
+    const searchInput = document.getElementById("courseSearchInput");
+    searchInput.value = "";
+
+
+    function renderCourses(filterText = "") {
+        courseGrid.innerHTML = "";
+
+        const q = filterText.trim().toLowerCase();
+
+        const courses = window.TRAINING_COURSES
+            .map(c => {
+                const isRelevant =
+                    crewType === "ETO"
+                        ? /hv|plc|automation|electrical/i.test(c.id)
+                        : true;
+
+                return { ...c, isRelevant };
+            })
+            .filter(c =>
+                !q ||
+                c.label.toLowerCase().includes(q) ||
+                c.id.toLowerCase().includes(q)
+            )
+            .sort((a, b) => {
+                if (a.isRelevant !== b.isRelevant) {
+                    return a.isRelevant ? -1 : 1;
+                }
+                return a.label.localeCompare(b.label);
+            });
+
+        let dividerAdded = false;
+
+        for (const c of courses) {
+            if (!c.isRelevant && !dividerAdded) {
+                const div = document.createElement("div");
+                div.className = "courseDivider";
+                div.textContent = "Other courses";
+                courseGrid.appendChild(div);
+                dividerAdded = true;
+            }
+
+            const tile = document.createElement("div");
+            tile.className = "courseTile" + (c.isRelevant ? "" : " disabled");
+            tile.textContent = c.label;
+
+            if (c.isRelevant) {
+                tile.addEventListener("click", () => {
+                    updateCrew(activeCrewId, cc => ({
+                        ...cc,
+                        training: (cc.training || []).map(t =>
+                            t.id === activeTrainingId
+                                ? { ...t, courseId: c.id }
+                                : t
+                        )
+                    }));
+
+                    const labelEl = activeCourseTarget.querySelector("[data-course-text]");
+                    if (labelEl) labelEl.textContent = c.label;
+
+                    coursePopup.classList.add("hidden");
+                    document.body.style.overflow = "";
+                    renderTabs(activeCrewId);
+                });
+            }
+
+            courseGrid.appendChild(tile);
+        }
+    }
+
+    searchInput.addEventListener("input", () => {
+        renderCourses(searchInput.value);
+    });
+
+
+    renderCourses();
+
+
+    courseGrid.innerHTML = "";
+
+    const courses = window.TRAINING_COURSES.map(c => {
+        const isRelevant =
+            crewType === "ETO"
+                ? /hv|plc|automation|electrical/i.test(c.id)
+                : true;
+
+        return { ...c, isRelevant };
+    });
+
+    // Sort: relevant first, then alphabetical
+    courses.sort((a, b) => {
+        if (a.isRelevant !== b.isRelevant) {
+            return a.isRelevant ? -1 : 1;
+        }
+        return a.label.localeCompare(b.label);
+    });
+
+    let insertedDivider = false;
+
+    for (const c of courses) {
+        if (!c.isRelevant && !insertedDivider) {
+            const divider = document.createElement("div");
+            divider.className = "courseDivider";
+            divider.textContent = "Other available courses";
+            courseGrid.appendChild(divider);
+            insertedDivider = true;
+        }
+
+        for (const c of courses) {
+            const tile = document.createElement("div");
+            tile.className = "courseTile" + (c.isRelevant ? "" : " disabled");
+            tile.textContent = c.label;
+
+            if (c.isRelevant) {
+                tile.addEventListener("click", () => {
+                    updateCrew(activeCrewId, cc => ({
+                        ...cc,
+                        training: (cc.training || []).map(t =>
+                            t.id === activeTrainingId
+                                ? { ...t, courseId: c.id }
+                                : t
+                        )
+                    }));
+
+                    const labelEl = activeCourseTarget.querySelector("[data-course-text]");
+                    if (labelEl) labelEl.textContent = c.label;
+
+                    coursePopup.classList.add("hidden");
+                    document.body.style.overflow = "";
+                    renderTabs(activeCrewId);
+                });
+            }
+
+            courseGrid.appendChild(tile);
+        }
+
+    }
+    // Open modal
+    coursePopup.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
 }
