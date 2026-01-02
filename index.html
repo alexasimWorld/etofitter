@@ -7,7 +7,47 @@
     <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-    <div class="app">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="loginScreen">
+        <div class="loginCard">
+            <div class="loginBrand">
+                <div class="brandMark"></div>
+                <div>
+                    <div class="loginTitle">CREW PLATFORM</div>
+                    <div class="loginSub">Secure Role Access</div>
+                </div>
+            </div>
+
+            <div class="loginField">
+                <label>Select Role</label>
+                <select id="loginRole">
+                    <option value="">— Choose role —</option>
+                    <option value="manager">Crew Manager</option>
+                    <option value="principal">Principal Company</option>
+                </select>
+            </div>
+
+            <div class="loginField">
+                <label>Password</label>
+                <input id="loginPassword" type="password" placeholder="Enter access code" />
+                <div class="loginHint">
+                    Crew Manager: <b>0000</b> &nbsp;•&nbsp; Principal Company: <b>1111</b>
+                </div>
+            </div>
+
+            <button id="loginBtn" class="btn loginBtn">Access Platform</button>
+
+            <div id="loginError" class="loginError hidden">
+                Invalid role or password
+            </div>
+        </div>
+    </div>
+
+
+
+    <div id="appRoot" class="app hidden">
+
         <!-- LEFT PANE -->
         <aside class="sidebar">
             <div class="brand">

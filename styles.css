@@ -883,3 +883,93 @@ body {
         box-shadow: 0 0 0 3px rgba(120,180,255,.12);
     }
 
+
+/* ===== LOGIN SCREEN ===== */
+.loginScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(800px 500px at 20% 10%, rgba(120,180,255,.18), transparent 60%), radial-gradient(800px 500px at 80% 20%, rgba(160,120,255,.14), transparent 60%), linear-gradient(180deg, #05070d, #070a12);
+}
+
+.loginCard {
+    width: 420px;
+    max-width: 92vw;
+    padding: 28px;
+    border-radius: 28px;
+    border: 1px solid rgba(255,255,255,.14);
+    background: linear-gradient( 180deg, rgba(255,255,255,.10), rgba(255,255,255,.04) );
+    box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 60px 140px rgba(0,0,0,.85);
+    backdrop-filter: blur(10px);
+}
+
+.loginBrand {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 22px;
+}
+
+.loginTitle {
+    font-weight: 900;
+    letter-spacing: .14em;
+}
+
+.loginSub {
+    font-size: 12px;
+    color: rgba(255,255,255,.55);
+    margin-top: 4px;
+}
+
+.loginField {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+    .loginField label {
+        font-size: 11px;
+        letter-spacing: .10em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,.55);
+    }
+
+    .loginField input,
+    .loginField select {
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,.18);
+        background: rgba(0,0,0,.28);
+        color: white;
+        outline: none;
+    }
+
+        .loginField input:focus,
+        .loginField select:focus {
+            border-color: rgba(160,220,255,.45);
+            box-shadow: 0 0 0 4px rgba(120,180,255,.12);
+        }
+
+.loginHint {
+    font-size: 11px;
+    color: rgba(255,255,255,.45);
+}
+
+.loginBtn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 14px;
+    font-size: 14px;
+}
+
+.loginError {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #ff8a8a;
+    text-align: center;
+}
+
