@@ -20,6 +20,15 @@ const TABS = [
     { key: "status", label: "Status" },
 ];
 
+
+let CURRENT_ROLE = sessionStorage.getItem("role"); // "manager" | "principal"
+
+function isReadOnly() {
+    return CURRENT_ROLE === "principal";
+}
+
+
+
 let state = loadState();
 let selectedType = null;
 let selectedCrewId = null;
@@ -27,6 +36,8 @@ let activeTabKey = "personal";
 let activeCourseTarget = null;
 let activeCrewId = null;
 let activeTrainingId = null;
+
+
 
 
 // ----- DOM -----
@@ -67,6 +78,51 @@ const closeCoursePopupBtn = document.getElementById("closeCoursePopup");
 
 
 let editingCrewId = null;
+
+
+const loginScreen = document.getElementById("loginScreen");
+const appRoot = document.getElementById("appRoot");
+
+const loginBtn = document.getElementById("loginBtn");
+const loginRole = document.getElementById("loginRole");
+const loginPassword = document.getElementById("loginPassword");
+const loginError = document.getElementById("loginError");
+
+function bootApp() {
+    loginScreen.classList.add("hidden");
+    appRoot.classList.remove("hidden");
+
+    renderTypeList();
+    wireEvents();
+    renderList();
+    showListView();
+}
+
+if (!CURRENT_ROLE) {
+    loginScreen.classList.remove("hidden");
+} else {
+    bootApp();
+}
+
+loginBtn.addEventListener("click", () => {
+    const role = loginRole.value;
+    const pass = loginPassword.value;
+
+    const valid =
+        (role === "manager" && pass === "0000") ||
+        (role === "principal" && pass === "1111");
+
+    if (!valid) {
+        loginError.classList.remove("hidden");
+        return;
+    }
+
+    CURRENT_ROLE = role;
+    sessionStorage.setItem("role", role);
+    bootApp();
+});
+
+
 
 document.addEventListener("DOMContentLoaded", () => {
     renderTypeList();
