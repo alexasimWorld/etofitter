@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -25,7 +25,20 @@
 
             <div class="sidebarFooter">
                 <div class="hint">Tip: Select a type → choose a crew → full profile opens.</div>
+
+                <div style="height:12px"></div>
+
+                <button id="exportJsonBtn" class="btn small ghost" style="width:100%">
+                    Export File (Save as .JSON)
+                </button>
+
+                <div style="height:8px"></div>
+
+                <button id="importJsonBtn" class="btn small ghost" style="width:100%">
+                    Import file (Existing .JSON)
+                </button>
             </div>
+
         </aside>
 
         <!-- RIGHT PANE -->
@@ -67,37 +80,38 @@
                     </div>
 
                     <div class="profileBody">
-                        <!-- Left card -->
-                        <div class="panel photoPanel">
-                            <div class="panelTitle">Identity</div>
-
-                            <div class="photoRow">
-                                <div class="avatarWrap">
-                                    <img id="profilePhoto" class="avatar" alt="Crew photo" />
-                                    <div class="avatarGlow"></div>
-                                </div>
-
-                                <div class="photoActions">
-                                    <label class="btn small">
-                                        Upload Photo
-                                        <input id="photoInput" type="file" accept="image/*" hidden />
-                                    </label>
-                                    <button id="removePhotoBtn" class="btn small ghost">Remove</button>
-                                    <div class="muted tiny">JPG/PNG/WebP</div>
-                                </div>
-                            </div>
-
-                            <div class="kvGrid" id="profileDetails"></div>
-                        </div>
-
-                        <!-- Right: TABS -->
                         <div class="panel tabPanel">
                             <div class="tabsBar" id="tabsBar"></div>
                             <div class="tabBody" id="tabBody"></div>
                         </div>
                     </div>
+
+
+
                 </div>
             </section>
+
+
+            <div id="coursePopup" class="modal hidden">
+                <div class="modalCard" style="max-width:900px">
+                    <div class="modalHeader">
+                        <div class="modalTitle">Select training course (Only shows available courses per rank)</div>
+                        <button id="closeCoursePopup" class="btn ghost small">✕</button>
+                    </div>
+
+                    <div class="modalBody">
+                        <div class="courseSearchWrap">
+                            <input id="courseSearchInput"
+                                   class="courseSearch"
+                                   placeholder="Search courses…" />
+                        </div>
+
+                        <div id="courseGrid" class="courseGrid"></div>
+                    </div>
+
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -106,6 +120,7 @@
     <script src="js/fitters.js"></script>
 
     <!-- App logic LAST -->
+    <script src="js/courses.js"></script>
     <script src="js/app.js"></script>
 
     <!-- Modal: Add/Edit Crew -->
@@ -124,6 +139,12 @@
             </div>
         </div>
     </div>
+
+    <input id="jsonFileInput"
+           type="file"
+           accept=".json,application/json"
+           hidden />
+
 
 </body>
 </html>

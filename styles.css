@@ -1,4 +1,4 @@
-:root {
+﻿:root {
     --bg: #05070d;
     --bg2: #070a12;
     --panel: rgba(255,255,255,.06);
@@ -341,6 +341,28 @@ body {
     padding: 10px 10px 16px 10px
 }
 
+.tableRow input,
+.tableRow select {
+    height: 32px;
+    padding: 6px 8px;
+    font-size: 12px;
+    border-radius: 12px;
+    /* ADD THESE */
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(0,0,0,.25);
+    color: white;
+    outline: none;
+}
+
+    /* Optional: make disabled fields still readable */
+    .tableRow input:disabled {
+        color: rgba(255,255,255,.85);
+        opacity: 1; /* prevents browser from washing it out */
+    }
+
+
+
+
 .profileName {
     font-weight: 900;
     font-size: 18px
@@ -353,10 +375,9 @@ body {
 }
 
 .profileBody {
-    display: grid;
-    grid-template-columns: 420px 1fr;
-    gap: 14px;
+    display: block;
 }
+
 
 .panel {
     border-radius: var(--radius2);
@@ -666,12 +687,15 @@ body {
 .modal {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,.65);
+    z-index: 9999; /* ⬅ FORCE ABOVE EVERYTHING */
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 50;
+    background: rgba(0,0,0,.65);
+    backdrop-filter: blur(6px);
+    pointer-events: auto;
 }
+
 
 .modalCard {
     width: 720px;
@@ -682,6 +706,11 @@ body {
     box-shadow: 0 40px 80px rgba(0,0,0,.7);
     padding: 16px;
 }
+
+.modalCard {
+    pointer-events: auto;
+}
+
 
 .modalHeader {
     display: flex;
@@ -694,12 +723,28 @@ body {
     letter-spacing: .06em
 }
 
+/* Modal body should not grow infinitely */
 .modalBody {
     margin-top: 14px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    max-height: 60vh; /* controls popup height */
+    overflow-y: auto; /* SCROLL HERE */
+    padding-right: 6px; /* space for scrollbar */
 }
+
+    /* Nice scrollbar (optional but very recommended) */
+    .modalBody::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .modalBody::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,.18);
+        border-radius: 999px;
+    }
+
+    .modalBody::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
 
 .modalFooter {
     margin-top: 16px;
@@ -707,3 +752,134 @@ body {
     justify-content: flex-end;
     gap: 10px;
 }
+
+
+.courseSelect {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(0,0,0,.25);
+    cursor: pointer;
+    transition: border-color .12s ease, box-shadow .12s ease;
+}
+
+    .courseSelect:hover {
+        border-color: rgba(160,220,255,.35);
+        box-shadow: 0 0 0 3px rgba(120,180,255,.12);
+    }
+
+.courseLabel {
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.55);
+}
+
+.courseValue {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+}
+
+.courseArrow {
+    color: rgba(255,255,255,.45);
+}
+
+    .courseCard:hover {
+        transform: translateY(-2px);
+        border-color: rgba(160,220,255,.35);
+    }
+
+    .courseCard.disabled {
+        opacity: .45;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+.courseCardTitle {
+    font-weight: 800;
+}
+
+.courseCardMeta {
+    margin-top: 6px;
+    font-size: 12px;
+    color: rgba(255,255,255,.55);
+}
+
+    .courseSelect:hover {
+        border-color: rgba(160,220,255,.35);
+    }
+
+.courseValue {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+}
+
+.courseArrow {
+    color: var(--muted);
+}
+
+.courseGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.courseTile {
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,.25);
+    cursor: pointer;
+    user-select: none;
+    transition: transform .12s ease, border-color .12s ease, background .12s ease;
+    pointer-events: auto;
+}
+
+    .courseTile:hover {
+        transform: translateY(-2px);
+        border-color: rgba(160,220,255,.35);
+        background: rgba(120,180,255,.14);
+    }
+
+    .courseTile.disabled {
+        opacity: .35;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+.courseDivider {
+    grid-column: 1 / -1;
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.45);
+    margin: 10px 0 4px;
+}
+
+
+.courseSearchWrap {
+    margin-bottom: 10px;
+}
+
+.courseSearch {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(0,0,0,.25);
+    color: white;
+    outline: none;
+}
+
+    .courseSearch:focus {
+        border-color: rgba(160,220,255,.35);
+        box-shadow: 0 0 0 3px rgba(120,180,255,.12);
+    }
+
