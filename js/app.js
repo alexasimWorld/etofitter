@@ -1,4 +1,4 @@
-﻿// Crew Platform - app.js
+// Crew Platform - app.js
 
 const STORAGE_KEY = "crew_platform_v1";
 
@@ -20,29 +20,30 @@ const TABS = [
     { key: "status", label: "Status" },
 ];
 
-
+// =====================
+// ROLE
+// =====================
 let CURRENT_ROLE = sessionStorage.getItem("role"); // "manager" | "principal"
 
 function isReadOnly() {
     return CURRENT_ROLE === "principal";
 }
 
-
-
+// =====================
+// STATE
+// =====================
 let state = loadState();
 let selectedType = null;
 let selectedCrewId = null;
 let activeTabKey = "personal";
+
 let activeCourseTarget = null;
 let activeCrewId = null;
 let activeTrainingId = null;
 
-
-
-
-// ----- DOM -----
-
-
+// =====================
+// DOM REFERENCES
+// =====================
 const typeListEl = document.getElementById("typeList");
 const crewGridEl = document.getElementById("crewGrid");
 const searchInputEl = document.getElementById("searchInput");
@@ -76,10 +77,6 @@ const coursePopup = document.getElementById("coursePopup");
 const courseGrid = document.getElementById("courseGrid");
 const closeCoursePopupBtn = document.getElementById("closeCoursePopup");
 
-
-let editingCrewId = null;
-
-
 const loginScreen = document.getElementById("loginScreen");
 const appRoot = document.getElementById("appRoot");
 
@@ -88,6 +85,11 @@ const loginRole = document.getElementById("loginRole");
 const loginPassword = document.getElementById("loginPassword");
 const loginError = document.getElementById("loginError");
 
+let editingCrewId = null;
+
+// =====================
+// BOOTSTRAP (FIXED – SINGLE INIT PATH)
+// =====================
 function bootApp() {
     loginScreen.classList.add("hidden");
     appRoot.classList.remove("hidden");
@@ -96,15 +98,26 @@ function bootApp() {
     wireEvents();
     renderList();
     showListView();
+
+    if (isReadOnly()) {
+        // hard-disable editing UI for principal
+        addCrewBtn?.classList.add("hidden");
+        editCrewBtn?.classList.add("hidden");
+        deleteCrewBtn?.classList.add("hidden");
+    }
 }
 
+// INITIAL LOAD (NO DOMContentLoaded DOUBLE BOOT)
 if (!CURRENT_ROLE) {
     loginScreen.classList.remove("hidden");
 } else {
     bootApp();
 }
 
-loginBtn.addEventListener("click", () => {
+// =====================
+// LOGIN HANDLER
+// =====================
+loginBtn?.addEventListener("click", () => {
     const role = loginRole.value;
     const pass = loginPassword.value;
 
@@ -122,32 +135,28 @@ loginBtn.addEventListener("click", () => {
     bootApp();
 });
 
-
-
-document.addEventListener("DOMContentLoaded", () => {
-    renderTypeList();
-    wireEvents();
-    renderList();
-    showListView();
-});
-
+// =====================
+// COURSE POPUP CLOSE (SAFE SINGLE HANDLER)
+// =====================
 closeCoursePopupBtn?.addEventListener("click", () => {
     coursePopup.classList.add("hidden");
+    document.body.style.overflow = "";
 });
 
-
-
+// =====================
+// EVENT WIRING (FIXED – NO DUPLICATES)
+// =====================
 function wireEvents() {
-    // ---------------------------
-    // Search & navigation
-    // ---------------------------
-    searchInputEl?.addEventListener("input", () => renderList());
+    // Search
+    searchInputEl?.addEventListener("input", renderList);
 
+    // Navigation
     backBtn?.addEventListener("click", () => {
         selectedCrewId = null;
         showListView();
     });
 
+    // CRUD
     addCrewBtn && (addCrewBtn.onclick = () => openEditor());
     editCrewBtn && (editCrewBtn.onclick = () => openEditor(selectedCrewId));
     deleteCrewBtn && (deleteCrewBtn.onclick = deleteCrew);
@@ -155,32 +164,29 @@ function wireEvents() {
     closeEditorBtn && (closeEditorBtn.onclick = closeEditor);
     cancelCrewBtn && (cancelCrewBtn.onclick = closeEditor);
 
-    // ---------------------------
-    // Export / Import JSON
-    // ---------------------------
+    // =====================
+    // EXPORT / IMPORT JSON
+    // =====================
     const exportBtn = document.getElementById("exportJsonBtn");
     const importBtn = document.getElementById("importJsonBtn");
-    const jsonFileInput = document.getElementById("jsonFileInput");
+    const jsonFileInput = document.getElementById("jsonFileInput"); // USE EXISTING DOM INPUT
 
-    // Export
-    exportBtn && exportBtn.addEventListener("click", saveToJsonFile);
+    exportBtn?.addEventListener("click", saveToJsonFile);
 
-    // Import (OPEN FILE DIALOG ONCE)
-    importBtn && importBtn.addEventListener("click", () => {
-        jsonFileInput.value = "";   // allow re-import of same file
+    importBtn?.addEventListener("click", () => {
+        jsonFileInput.value = "";
         jsonFileInput.click();
     });
 
-    // Handle selected file
-    jsonFileInput && jsonFileInput.addEventListener("change", () => {
+    jsonFileInput?.addEventListener("change", () => {
         const file = jsonFileInput.files?.[0];
-        jsonFileInput.value = "";   // critical reset
+        jsonFileInput.value = "";
         if (file) loadFromJsonFile(file);
     });
 
-    // ---------------------------
-    // Save crew (Add / Edit)
-    // ---------------------------
+    // =====================
+    // SAVE CREW (ADD / EDIT)
+    // =====================
     if (saveCrewBtn) {
         saveCrewBtn.onclick = () => {
             const data = {};
@@ -218,10 +224,9 @@ function wireEvents() {
     }
 }
 
-
-
-
-// ----- State -----
+// =====================
+// STATE LOAD / SAVE
+// =====================
 function loadState() {
     let stored = { crew: [] };
 
@@ -240,10 +245,10 @@ function loadState() {
 
     const byId = new Map();
 
-    // Stored crew first
+    // stored crew first
     (stored.crew || []).forEach(c => byId.set(c.id, c));
 
-    // Add missing seed crew
+    // add missing seed crew
     seed.forEach(c => {
         if (!byId.has(c.id)) byId.set(c.id, c);
     });
@@ -252,8 +257,6 @@ function loadState() {
         crew: [...byId.values()].map(ensureCrewSchema)
     };
 }
-
-
 
 function saveState() {
     try {
@@ -264,7 +267,9 @@ function saveState() {
     }
 }
 
-
+// =====================
+// SCHEMA / NORMALIZATION
+// =====================
 function ensureCrewSchema(c) {
     const base = {
         ...c,
@@ -283,35 +288,32 @@ function ensureCrewSchema(c) {
 
 function normalizeStatusKey(s) {
     if (!s) return "";
-    // support old seed "status1..5"
     const old = String(s);
     if (old === "status1") return "studying";
     if (old === "status2") return "evaluation";
     if (old === "status3") return "preparation";
     if (old === "status4") return "assignment";
     if (old === "status5") return "proceed";
-    // already new
     const k = old.toLowerCase();
     if (STATUSES.some(x => x.key === k)) return k;
     return "";
 }
 
+// =====================
+// DEFAULT OBJECTS
+// =====================
 function defaultPersonal(c) {
     return {
-        // Core
         firstName: "", lastName: "",
         dateOfBirth: "", placeOfBirth: "",
-        age: "", // optional override; otherwise derived
+        age: "",
         nationality: c.nationality || "",
         gender: "", maritalStatus: "",
-        // Home
         addressLine1: "", addressLine2: "", city: "", stateRegion: "", postalCode: "", country: "",
         phoneHome: "", phoneMobile: c.phone || "", emailPersonal: c.email || "",
-        // Family / NOK
         spouseName: "", spousePhone: "",
         childrenCount: "",
         nextOfKinName: "", nextOfKinRelation: "", nextOfKinPhone: "", nextOfKinEmail: "",
-        // IDs / Health / Notes
         passportNo: "", seamanBookNo: "",
         medicalNotes: "",
         allergies: "",
@@ -336,6 +338,9 @@ function defaultFuture() {
     };
 }
 
+// =====================
+// UPDATE CREW (SAFE)
+// =====================
 function updateCrew(id, updater) {
     const idx = state.crew.findIndex(c => c.id === id);
     if (idx < 0) return;
@@ -343,7 +348,9 @@ function updateCrew(id, updater) {
     saveState();
 }
 
-// ----- Views -----
+// =====================
+// VIEW SWITCHING
+// =====================
 function showListView() {
     listViewEl.classList.remove("hidden");
     profileViewEl.classList.add("hidden");
@@ -351,6 +358,10 @@ function showListView() {
     addCrewBtn.classList.remove("hidden");
     editCrewBtn.classList.add("hidden");
     deleteCrewBtn.classList.add("hidden");
+
+    if (isReadOnly()) {
+        addCrewBtn.classList.add("hidden");
+    }
 
     const count = getFilteredCrew().length;
     viewTitleEl.textContent = selectedType || "All Crew";
@@ -362,11 +373,19 @@ function showProfileView() {
     profileViewEl.classList.remove("hidden");
 
     addCrewBtn.classList.add("hidden");
-    editCrewBtn.classList.remove("hidden");
-    deleteCrewBtn.classList.remove("hidden");
+
+    if (isReadOnly()) {
+        editCrewBtn.classList.add("hidden");
+        deleteCrewBtn.classList.add("hidden");
+    } else {
+        editCrewBtn.classList.remove("hidden");
+        deleteCrewBtn.classList.remove("hidden");
+    }
 }
 
-// ----- Rendering -----
+// =====================
+// TYPE LIST RENDERING
+// =====================
 function renderTypeList() {
     const types = ["ETO", "FITTERS"];
     typeListEl.innerHTML = "";
@@ -387,7 +406,10 @@ function renderTypeList() {
         btn.addEventListener("click", () => {
             selectedType = t;
             selectedCrewId = null;
-            [...typeListEl.querySelectorAll(".typeBtn")].forEach(x => x.classList.remove("active"));
+
+            [...typeListEl.querySelectorAll(".typeBtn")]
+                .forEach(x => x.classList.remove("active"));
+
             btn.classList.add("active");
             renderList();
             showListView();
@@ -397,19 +419,23 @@ function renderTypeList() {
     }
 }
 
+// =====================
+// CREW LIST RENDERING
+// =====================
 function renderList() {
     const crew = getFilteredCrew();
     crewGridEl.innerHTML = "";
 
     viewTitleEl.textContent = selectedType || "All Crew";
-    viewSubtitleEl.textContent = `Select a crew member to open the full profile`;
+    viewSubtitleEl.textContent = "Select a crew member to open the full profile";
 
     for (const c0 of crew) {
         const c = ensureCrewSchema(c0);
         const card = document.createElement("div");
         card.className = "crewCard";
 
-        const status = STATUSES.find(s => s.key === (c.status || "studying")) || STATUSES[0];
+        const status =
+            STATUSES.find(s => s.key === (c.status || "studying")) || STATUSES[0];
 
         const photoHtml = c.photoDataUrl
             ? `<img src="${c.photoDataUrl}" alt="photo" />`
@@ -440,18 +466,20 @@ function renderList() {
     }
 }
 
+// =====================
+// PROFILE HEADER + TABS
+// =====================
 function renderProfile(crewId) {
     const c = state.crew.find(x => x.id === crewId);
     if (!c) return;
 
     const crew = ensureCrewSchema(c);
-    const status = STATUSES.find(s => s.key === (crew.status || "studying")) || STATUSES[0];
+    const status =
+        STATUSES.find(s => s.key === (crew.status || "studying")) || STATUSES[0];
 
     profileNameEl.textContent = crew.name;
     profileRoleEl.textContent = `${crew.type} • ${crew.rank}`;
 
-    
-    // Tabs
     renderTabs(crewId);
 
     viewTitleEl.textContent = crew.name;
@@ -463,6 +491,7 @@ function renderTabs(crewId) {
     if (!crew) return;
 
     tabsBarEl.innerHTML = "";
+
     for (const t of TABS) {
         const b = document.createElement("button");
         b.className = "tabBtn" + (t.key === activeTabKey ? " active" : "");
@@ -474,8 +503,8 @@ function renderTabs(crewId) {
         tabsBarEl.appendChild(b);
     }
 
-    // body
     tabBodyEl.innerHTML = "";
+
     if (activeTabKey === "personal") return renderTabPersonal(crewId);
     if (activeTabKey === "docs") return renderTabDocuments(crewId);
     if (activeTabKey === "sea") return renderTabSea(crewId);
@@ -483,6 +512,7 @@ function renderTabs(crewId) {
     if (activeTabKey === "future") return renderTabFuture(crewId);
     if (activeTabKey === "status") return renderTabStatus(crewId);
 }
+
 
 // =====================
 // TAB 1: Personal details (30+ fields)
@@ -543,24 +573,31 @@ function renderTabPersonal(crewId) {
         el.innerHTML = `<div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div>`;
         profileDetailsEl.appendChild(el);
     }
+
     const photoInputEl = identity.querySelector("#photoInput");
     const removePhotoBtn = identity.querySelector("#removePhotoBtn");
 
-    photoInputEl.addEventListener("change", async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    // Read-only (principal): disable photo actions
+    if (isReadOnly()) {
+        photoInputEl.disabled = true;
+        removePhotoBtn.disabled = true;
+        identity.querySelector(".photoActions")?.classList.add("hidden");
+    } else {
+        photoInputEl.addEventListener("change", async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
 
-        const dataUrl = await fileToDataUrl(file);
-        updateCrew(crewId, c => ({ ...c, photoDataUrl: dataUrl }));
-        renderTabs(crewId); // refresh tab
-        e.target.value = "";
-    });
+            const dataUrl = await fileToDataUrl(file);
+            updateCrew(crewId, cc => ({ ...cc, photoDataUrl: dataUrl }));
+            renderTabs(crewId);
+            e.target.value = "";
+        });
 
-    removePhotoBtn.addEventListener("click", () => {
-        updateCrew(crewId, c => ({ ...c, photoDataUrl: "" }));
-        renderTabs(crewId);
-    });
-
+        removePhotoBtn.addEventListener("click", () => {
+            updateCrew(crewId, cc => ({ ...cc, photoDataUrl: "" }));
+            renderTabs(crewId);
+        });
+    }
 
     const fields = [
         ["First name", "firstName"], ["Last name", "lastName"],
@@ -619,6 +656,12 @@ function renderTabPersonal(crewId) {
     wrap.querySelector("#p_emergencyAddress").value = p.emergencyAddress || "";
     wrap.querySelector("#p_remarks").value = p.remarks || "";
 
+    // Read-only (principal): disable all inputs
+    if (isReadOnly()) {
+        wrap.querySelectorAll("input,textarea").forEach(el => el.disabled = true);
+        return;
+    }
+
     // save-on-input (debounced)
     const debouncedSave = debounce((k, v) => {
         updateCrew(crewId, cc => ({
@@ -642,7 +685,7 @@ function renderTabPersonal(crewId) {
 }
 
 // =====================
-// TAB 2: Documents Control (100+ docs, upload any file, dblclick view, remove, description)
+// TAB 2: Documents Control
 // =====================
 function renderTabDocuments(crewId) {
     const c = ensureCrewSchema(state.crew.find(x => x.id === crewId));
@@ -654,7 +697,7 @@ function renderTabDocuments(crewId) {
         <div style="font-weight:900">Documents</div>
         <div class="muted tiny">Upload any file type. Double-click a row to open.</div>
       </div>
-      <label class="btn">
+      <label class="btn" id="docsUploadWrap">
         Upload Documents
         <input id="docsUpload" type="file" multiple hidden />
       </label>
@@ -669,7 +712,16 @@ function renderTabDocuments(crewId) {
     const list = header.querySelector("#docsList");
     renderDocsList(list, crewId);
 
-    header.querySelector("#docsUpload").addEventListener("change", async (e) => {
+    const uploadWrap = header.querySelector("#docsUploadWrap");
+    const uploadEl = header.querySelector("#docsUpload");
+
+    // Read-only (principal): hide upload
+    if (isReadOnly()) {
+        uploadWrap?.classList.add("hidden");
+        return;
+    }
+
+    uploadEl.addEventListener("change", async (e) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
 
@@ -740,26 +792,32 @@ function renderDocsList(container, crewId) {
             a.click();
         });
 
-        row.querySelector("[data-doc-del]")?.addEventListener("click", () => {
-            if (!confirm("Remove this document?")) return;
-            updateCrew(crewId, cc => ({ ...cc, documents: (cc.documents || []).filter(x => x.id !== d.id) }));
-            renderTabs(crewId);
-        });
+        // Read-only (principal): disable editing/removal
+        if (isReadOnly()) {
+            row.querySelector("[data-doc-del]")?.setAttribute("disabled", "disabled");
+            row.querySelector("[data-doc-desc]")?.setAttribute("disabled", "disabled");
+        } else {
+            row.querySelector("[data-doc-del]")?.addEventListener("click", () => {
+                if (!confirm("Remove this document?")) return;
+                updateCrew(crewId, cc => ({ ...cc, documents: (cc.documents || []).filter(x => x.id !== d.id) }));
+                renderTabs(crewId);
+            });
 
-        row.querySelector("[data-doc-desc]")?.addEventListener("input", (ev) => {
-            const v = ev.currentTarget.value;
-            updateCrew(crewId, cc => ({
-                ...cc,
-                documents: (cc.documents || []).map(x => x.id === d.id ? { ...x, description: v } : x)
-            }));
-        });
+            row.querySelector("[data-doc-desc]")?.addEventListener("input", (ev) => {
+                const v = ev.currentTarget.value;
+                updateCrew(crewId, cc => ({
+                    ...cc,
+                    documents: (cc.documents || []).map(x => x.id === d.id ? { ...x, description: v } : x)
+                }));
+            });
+        }
 
         container.appendChild(row);
     }
 }
 
 // =====================
-// TAB 3: Sea experience (from-to + duration months auto, vessel, manager, manning, comments)
+// TAB 3: Sea experience
 // =====================
 function renderTabSea(crewId) {
     const c = ensureCrewSchema(state.crew.find(x => x.id === crewId));
@@ -782,7 +840,15 @@ function renderTabSea(crewId) {
     const list = wrap.querySelector("#seaList");
     renderSeaList(list, crewId);
 
-    wrap.querySelector("#seaAdd").addEventListener("click", () => {
+    const addBtn = wrap.querySelector("#seaAdd");
+
+    if (isReadOnly()) {
+        addBtn.disabled = true;
+        addBtn.classList.add("hidden");
+        return;
+    }
+
+    addBtn.addEventListener("click", () => {
         const line = {
             id: cryptoId(),
             from: "",
@@ -814,65 +880,20 @@ function renderSeaList(container, crewId) {
         row.style.gridTemplateColumns = "110px 110px 80px 1.5fr 1.5fr 1.5fr 2fr auto";
         row.style.alignItems = "center";
 
-
+        // FIXED markup order to match columns:
         row.innerHTML = `
-<input
-  type="date"
-  data-sea-from="..."
-  title="From"
-/>
+      <input type="date" data-sea-from title="From" />
+      <input type="date" data-sea-to title="To" />
+      <input type="text" disabled data-sea-months value="${(Number(it.months) || 0).toFixed(2)}" title="Months" />
 
+      <input data-sea-vessel placeholder="Vessel" title="Vessel name" />
+      <input data-sea-manager placeholder="Manager" title="Manager name" />
+      <input data-sea-manning placeholder="Manning" title="Manning office" />
+      <input data-sea-comments placeholder="Comments" title="Comments" />
 
-<input
-  type="date"
-  data-sea-to="..."
-  title="To"
-/>
-
-
-<input
-  type="text"
-  disabled
-  data-sea-months
-  value="${(Number(it.months) || 0).toFixed(2)}"
-  title="Months"
-/>
-
-
-
-<div class="rowActions">
-  <button class="btn small ghost" data-sea-del>Remove</button>
-</div>
-
-
-
-<input
-  data-sea-vessel="..."
-  placeholder="Vessel"
-  title="Vessel name"
-/>
-
-
-<input
-  data-sea-manager="..."
-  placeholder="Manager"
-  title="Manager name"
-/>
-
-
-<input
-  data-sea-manning="..."
-  placeholder="Manning"
-  title="Manning office"
-/>
-
-
-<input
-  data-sea-comments="..."
-  placeholder="Comments"
-  title="Comments"
-/>
-
+      <div class="rowActions">
+        <button class="btn small ghost" data-sea-del>Remove</button>
+      </div>
     `;
 
         const fromEl = row.querySelector("[data-sea-from]");
@@ -889,12 +910,10 @@ function renderSeaList(container, crewId) {
         toEl.value = it.to || "";
         row.querySelector("[data-sea-months]").value = (Number(it.months) || 0).toFixed(2);
 
-
         row.querySelector("[data-sea-vessel]").value = it.vesselName || "";
         row.querySelector("[data-sea-manager]").value = it.managerName || "";
         row.querySelector("[data-sea-manning]").value = it.manningOffice || "";
         row.querySelector("[data-sea-comments]").value = it.comments || "";
-
 
         function updateMonths() {
             const from = fromEl.value;
@@ -902,34 +921,36 @@ function renderSeaList(container, crewId) {
             const months = calcMonths(from, to);
             write({ from, to, months });
 
-            // update months field ONLY
             const monthsInput = row.querySelector("[data-sea-months]");
             if (monthsInput) monthsInput.value = (Number(months) || 0).toFixed(2);
-
         }
 
+        // Read-only (principal): lock fields + remove button
+        if (isReadOnly()) {
+            row.querySelectorAll("input").forEach(el => el.disabled = true);
+            row.querySelector("[data-sea-del]")?.setAttribute("disabled", "disabled");
+        } else {
+            fromEl.addEventListener("change", updateMonths);
+            toEl.addEventListener("change", updateMonths);
 
-        fromEl.addEventListener("change", updateMonths);
-        toEl.addEventListener("change", updateMonths);
+            row.querySelector("[data-sea-vessel]")?.addEventListener("input", e => write({ vesselName: e.currentTarget.value }));
+            row.querySelector("[data-sea-manager]")?.addEventListener("input", e => write({ managerName: e.currentTarget.value }));
+            row.querySelector("[data-sea-manning]")?.addEventListener("input", e => write({ manningOffice: e.currentTarget.value }));
+            row.querySelector("[data-sea-comments]")?.addEventListener("input", e => write({ comments: e.currentTarget.value }));
 
-        row.querySelector("[data-sea-vessel]")?.addEventListener("input", e => write({ vesselName: e.currentTarget.value }));
-        row.querySelector("[data-sea-manager]")?.addEventListener("input", e => write({ managerName: e.currentTarget.value }));
-        row.querySelector("[data-sea-manning]")?.addEventListener("input", e => write({ manningOffice: e.currentTarget.value }));
-        row.querySelector("[data-sea-comments]")?.addEventListener("input", e => write({ comments: e.currentTarget.value }));
-
-        row.querySelector("[data-sea-del]").addEventListener("click", () => {
-
-            if (!confirm("Remove this sea experience line?")) return;
-            updateCrew(crewId, cc => ({ ...cc, seaExperience: (cc.seaExperience || []).filter(x => x.id !== it.id) }));
-            renderTabs(crewId);
-        });
+            row.querySelector("[data-sea-del]").addEventListener("click", () => {
+                if (!confirm("Remove this sea experience line?")) return;
+                updateCrew(crewId, cc => ({ ...cc, seaExperience: (cc.seaExperience || []).filter(x => x.id !== it.id) }));
+                renderTabs(crewId);
+            });
+        }
 
         container.appendChild(row);
     }
 }
 
 // =====================
-// TAB 4: Training Progress (add/edit/remove)
+// TAB 4: Training Progress
 // =====================
 function renderTabTraining(crewId) {
     const c = ensureCrewSchema(state.crew.find(x => x.id === crewId));
@@ -951,7 +972,15 @@ function renderTabTraining(crewId) {
     const list = wrap.querySelector("#trList");
     renderTrainingList(list, crewId);
 
-    wrap.querySelector("#trAdd").addEventListener("click", () => {
+    const addBtn = wrap.querySelector("#trAdd");
+
+    if (isReadOnly()) {
+        addBtn.disabled = true;
+        addBtn.classList.add("hidden");
+        return;
+    }
+
+    addBtn.addEventListener("click", () => {
         const line = {
             id: cryptoId(),
             courseId: "",
@@ -978,10 +1007,8 @@ function renderTrainingList(container, crewId) {
     for (const it of items) {
         const row = document.createElement("div");
         row.className = "tableRow";
-        row.style.gridTemplateColumns =
-            "2.5fr 1fr 110px 110px 1.5fr auto";
+        row.style.gridTemplateColumns = "2.5fr 1fr 110px 110px 1.5fr auto";
         row.style.alignItems = "center";
-
 
         row.innerHTML = `
 <div class="courseSelect" data-course-select>
@@ -992,41 +1019,20 @@ function renderTrainingList(container, crewId) {
   </div>
 </div>
 
-
-
-
 <select data-tr-status title="Status">
   <option value="Enrolled">Enrolled</option>
   <option value="Ongoing">Ongoing</option>
   <option value="Completed">Completed</option>
 </select>
 
+<input type="date" data-tr-start title="Start date" />
+<input type="date" data-tr-end title="End date" />
 
+<input data-tr-resp placeholder="Responsible" title="Responsible person" />
 
-<input
-  type="date"
-  data-tr-start="..."
-  title="Start date"
-/>
-
-
-<input
-  type="date"
-  data-tr-end="..."
-  title="End date"
-/>
-
-
-<input
-  data-tr-resp="..."
-  placeholder="Responsible"
-  title="Responsible person"
-/>
-
-
-      <div class="rowActions">
-        <button class="btn small ghost" data-tr-del="${escapeAttr(it.id)}">Remove</button>
-      </div>
+<div class="rowActions">
+  <button class="btn small ghost" data-tr-del="${escapeAttr(it.id)}">Remove</button>
+</div>
     `;
 
         const write = (patch) => {
@@ -1042,23 +1048,25 @@ function renderTrainingList(container, crewId) {
         row.querySelector("[data-tr-end]").value = it.dateCompleted || "";
         row.querySelector("[data-tr-resp]").value = it.responsible || "";
 
-
-
         const courseSelectEl = row.querySelector("[data-course-select]");
         const courseTextEl = row.querySelector("[data-course-text]");
 
         // initial value
-        if (it.courseId) {
-            const found = window.TRAINING_COURSES.find(c => c.id === it.courseId);
+        if (it.courseId && Array.isArray(window.TRAINING_COURSES)) {
+            const found = window.TRAINING_COURSES.find(c0 => c0.id === it.courseId);
             if (found) courseTextEl.textContent = found.label;
         }
 
+        // Read-only (principal): disable everything
+        if (isReadOnly()) {
+            row.querySelectorAll("input,select,button").forEach(el => el.disabled = true);
+            container.appendChild(row);
+            continue;
+        }
 
         courseSelectEl.addEventListener("click", () => {
             openCoursePopup(courseSelectEl, c.type, crewId, it.id);
         });
-
-
 
         row.querySelector("[data-tr-status]")?.addEventListener("change", e => write({ status: e.currentTarget.value }));
         row.querySelector("[data-tr-start]")?.addEventListener("change", e => write({ dateStarted: e.currentTarget.value }));
@@ -1076,7 +1084,7 @@ function renderTrainingList(container, crewId) {
 }
 
 // =====================
-// TAB 5: Future employment (plans)
+// TAB 5: Future employment
 // =====================
 function renderTabFuture(crewId) {
     const c = ensureCrewSchema(state.crew.find(x => x.id === crewId));
@@ -1129,6 +1137,11 @@ function renderTabFuture(crewId) {
     wrap.querySelector("#f_limitations").value = f.limitations || "";
     wrap.querySelector("#f_notes").value = f.notes || "";
 
+    if (isReadOnly()) {
+        wrap.querySelectorAll("input,textarea").forEach(el => el.disabled = true);
+        return;
+    }
+
     const save = debounce(() => {
         updateCrew(crewId, cc => ({
             ...cc,
@@ -1150,7 +1163,7 @@ function renderTabFuture(crewId) {
 }
 
 // =====================
-// TAB 6: Status (5 buttons + comment)
+// TAB 6: Status
 // =====================
 function renderTabStatus(crewId) {
     const c = ensureCrewSchema(state.crew.find(x => x.id === crewId));
@@ -1179,29 +1192,40 @@ function renderTabStatus(crewId) {
         b.className = "statusBtn" + (s.key === c.status ? " active" : "");
         b.style.background = `linear-gradient(135deg, ${s.color}, rgba(0,0,0,.18))`;
         b.textContent = s.label;
-        b.addEventListener("click", () => {
-            updateCrew(crewId, cc => ({ ...cc, status: s.key }));
-            // refresh profile header subtitle etc.
-            renderProfile(crewId);
-            // keep status tab active
-            activeTabKey = "status";
-            renderTabs(crewId);
-        });
+
+        if (isReadOnly()) {
+            b.disabled = true;
+        } else {
+            b.addEventListener("click", () => {
+                updateCrew(crewId, cc => ({ ...cc, status: s.key }));
+                renderProfile(crewId);
+                activeTabKey = "status";
+                renderTabs(crewId);
+            });
+        }
+
         grid.appendChild(b);
     }
 
     const ta = wrap.querySelector("#statusComment");
     ta.value = c.statusComment || "";
+
+    if (isReadOnly()) {
+        ta.disabled = true;
+        return;
+    }
+
     ta.addEventListener("input", debounce(() => {
         updateCrew(crewId, cc => ({ ...cc, statusComment: ta.value }));
-        // optional: keep profile subtitle fresh
         renderProfile(crewId);
         activeTabKey = "status";
         renderTabs(crewId);
     }, 350));
 }
 
-// ----- Filtering (we’ll expand later; for now keep base search) -----
+// =====================
+// FILTERING
+// =====================
 function getFilteredCrew() {
     const q = (searchInputEl.value || "").trim().toLowerCase();
 
@@ -1218,8 +1242,12 @@ function getFilteredCrew() {
         });
 }
 
-// ----- Add/Edit modal -----
+// =====================
+// ADD / EDIT MODAL
+// =====================
 function openEditor(id = null) {
+    if (isReadOnly()) return;
+
     editingCrewId = id;
     crewEditorEl.classList.remove("hidden");
 
@@ -1260,8 +1288,9 @@ function input(label, name, value = "", type = "text", options = []) {
     </div>`;
 }
 
-
 function deleteCrew() {
+    if (isReadOnly()) return;
+
     if (!selectedCrewId) return;
     if (!confirm("Delete this crew member?")) return;
 
@@ -1273,7 +1302,10 @@ function deleteCrew() {
     showListView();
 }
 
-// ----- Helpers -----
+
+// =====================
+// HELPERS
+// =====================
 function initials(name) {
     const parts = (name || "").trim().split(/\s+/).filter(Boolean);
     const a = parts[0]?.[0] || "?";
@@ -1317,15 +1349,11 @@ function fileToDataUrl(file) {
 
 function openDataUrl(dataUrl) {
     try {
-        // Try new tab first
         const win = window.open("", "_blank");
         if (!win) {
-            // Fallback: same tab
             window.location.href = dataUrl;
             return;
         }
-
-        // Write minimal HTML wrapper
         win.document.open();
         win.document.write(`
             <!doctype html>
@@ -1349,26 +1377,21 @@ function openDataUrl(dataUrl) {
             </html>
         `);
         win.document.close();
-    } catch (e) {
+    } catch {
         alert("Unable to open file. Please allow popups.");
     }
 }
 
-
-// months difference between two YYYY-MM-DD strings (inclusive-ish, simple and stable)
+// months difference between two YYYY-MM-DD strings
 function calcMonths(fromStr, toStr) {
     if (!fromStr || !toStr) return 0;
-
     const from = new Date(fromStr);
     const to = new Date(toStr);
     if (isNaN(from) || isNaN(to) || to < from) return 0;
-
     const days = (to - from) / (1000 * 60 * 60 * 24) + 1;
-    const months = days / 30.4375; // average month length
-    return Math.round(months * 100) / 100; // 2 decimals
-
+    const months = days / 30.4375;
+    return Math.round(months * 100) / 100;
 }
-
 
 function debounce(fn, ms) {
     let t = null;
@@ -1397,7 +1420,9 @@ function avatarPlaceholderDataUrl(name) {
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
-
+// =====================
+// JSON EXPORT / IMPORT
+// =====================
 function saveToJsonFile() {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -1412,24 +1437,18 @@ function saveToJsonFile() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-
-
 function loadFromJsonFile(file) {
     const reader = new FileReader();
 
     reader.onload = () => {
         try {
             const data = JSON.parse(reader.result);
-
             if (!data || !Array.isArray(data.crew)) {
                 alert("Invalid crew JSON file.");
                 return;
             }
 
-            state = {
-                crew: data.crew.map(ensureCrewSchema)
-            };
-
+            state = { crew: data.crew.map(ensureCrewSchema) };
             saveState();
 
             selectedType = null;
@@ -1450,62 +1469,38 @@ function loadFromJsonFile(file) {
     reader.readAsText(file);
 }
 
-
-
-const jsonFileInput = document.createElement("input");
-jsonFileInput.type = "file";
-jsonFileInput.accept = ".json";
-jsonFileInput.hidden = true;
-
-jsonFileInput.addEventListener("change", e => {
-    const file = e.target.files?.[0];
-    if (file) loadFromJsonFile(file);
-    jsonFileInput.value = "";
-});
-
-document.body.appendChild(jsonFileInput);
-
-
-
+// =====================
+// COURSE POPUP (FIXED)
+// =====================
 function openCoursePopup(anchorEl, crewType, crewId, trainingId) {
-    if (!anchorEl) return;
+    if (!anchorEl || !Array.isArray(window.TRAINING_COURSES)) return;
 
     activeCourseTarget = anchorEl;
     activeCrewId = crewId;
     activeTrainingId = trainingId;
 
-    if (!Array.isArray(window.TRAINING_COURSES)) {
-        console.warn("TRAINING_COURSES not loaded");
-        return;
-    }
-
     const searchInput = document.getElementById("courseSearchInput");
     searchInput.value = "";
 
-
     function renderCourses(filterText = "") {
         courseGrid.innerHTML = "";
-
         const q = filterText.trim().toLowerCase();
 
         const courses = window.TRAINING_COURSES
-            .map(c => {
-                const isRelevant =
+            .map(c => ({
+                ...c,
+                isRelevant:
                     crewType === "ETO"
                         ? /hv|plc|automation|electrical/i.test(c.id)
-                        : true;
-
-                return { ...c, isRelevant };
-            })
+                        : true
+            }))
             .filter(c =>
                 !q ||
                 c.label.toLowerCase().includes(q) ||
                 c.id.toLowerCase().includes(q)
             )
             .sort((a, b) => {
-                if (a.isRelevant !== b.isRelevant) {
-                    return a.isRelevant ? -1 : 1;
-                }
+                if (a.isRelevant !== b.isRelevant) return a.isRelevant ? -1 : 1;
                 return a.label.localeCompare(b.label);
             });
 
@@ -1548,74 +1543,11 @@ function openCoursePopup(anchorEl, crewType, crewId, trainingId) {
         }
     }
 
-    searchInput.addEventListener("input", () => {
-        renderCourses(searchInput.value);
-    });
-
+    // replace previous handler (no stacking)
+    searchInput.oninput = () => renderCourses(searchInput.value);
 
     renderCourses();
 
-
-    courseGrid.innerHTML = "";
-
-    const courses = window.TRAINING_COURSES.map(c => {
-        const isRelevant =
-            crewType === "ETO"
-                ? /hv|plc|automation|electrical/i.test(c.id)
-                : true;
-
-        return { ...c, isRelevant };
-    });
-
-    // Sort: relevant first, then alphabetical
-    courses.sort((a, b) => {
-        if (a.isRelevant !== b.isRelevant) {
-            return a.isRelevant ? -1 : 1;
-        }
-        return a.label.localeCompare(b.label);
-    });
-
-    let insertedDivider = false;
-
-    for (const c of courses) {
-        if (!c.isRelevant && !insertedDivider) {
-            const divider = document.createElement("div");
-            divider.className = "courseDivider";
-            divider.textContent = "Other available courses";
-            courseGrid.appendChild(divider);
-            insertedDivider = true;
-        }
-
-        for (const c of courses) {
-            const tile = document.createElement("div");
-            tile.className = "courseTile" + (c.isRelevant ? "" : " disabled");
-            tile.textContent = c.label;
-
-            if (c.isRelevant) {
-                tile.addEventListener("click", () => {
-                    updateCrew(activeCrewId, cc => ({
-                        ...cc,
-                        training: (cc.training || []).map(t =>
-                            t.id === activeTrainingId
-                                ? { ...t, courseId: c.id }
-                                : t
-                        )
-                    }));
-
-                    const labelEl = activeCourseTarget.querySelector("[data-course-text]");
-                    if (labelEl) labelEl.textContent = c.label;
-
-                    coursePopup.classList.add("hidden");
-                    document.body.style.overflow = "";
-                    renderTabs(activeCrewId);
-                });
-            }
-
-            courseGrid.appendChild(tile);
-        }
-
-    }
-    // Open modal
     coursePopup.classList.remove("hidden");
     document.body.style.overflow = "hidden";
 }
